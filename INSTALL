@@ -1,0 +1,54 @@
+(1) go to folder src/libcli
+(1a) sudo make
+(1b) sudo make install
+(1c) sudo ldconfig
+
+(2) now come back to 'src' folder
+(2a) gcc effortless.c -lcli
+
+(3) now run the binary a.out with sudo persmissions
+(4) telnet to the localhost (or) IP to port number '9000'
+username: admin
+password: nerd
+enable password: topsecret
+
+example:
+
+kaprakashr@gmail.com$ sudo ./a.out 
+Listening on port 9000
+ * accepted connection from 127.0.0.1
+ 
+then from any other window:
+
+kalyan@kalyan-Latitude-7480:~/kernpack$ telnet localhost 9000
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+Traffic Generator-> Version:: 1.05
+
+Username: admin
+Password: nerd
+
+Traffic Generator> enable
+Password: topsecret
+
+Traffic Generator#      
+  help                 Show available commands
+  quit                 Disconnect
+  logout               Disconnect
+  exit                 Exit from current mode
+  history              Show a list of previously run commands
+  enable               Turn on privileged commands
+  disable              Turn off privileged commands
+  configure            Enter configuration mode
+  set                  Configuring the traffic stream
+  show                 Show parameters
+  traffic              push traffic
+
+Traffic Generator# 
+
+
+
+
+
+   
