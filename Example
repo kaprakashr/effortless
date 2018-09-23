@@ -1,0 +1,81 @@
+
+'effortless' example to create a traffic stream
+
+Example Scenario:
+
+I want to send 100 UDP flows, from port number 5000-5100 with '100' packets per flow,
+to be sent at wirespeed.!
+
+kaprakashr@gmail.com:~/$ telnet localhost 9000
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+Traffic Generator-> Version:: 1.05
+
+Username: admin
+Password: nerd 
+
+Traffic Generator> en
+Password: topsecret
+Traffic Generator# 
+
+Traffic Generator# set udp 
+set udp              Configure UDP Stream
+  source_ip            Set Source IP Address                
+  destination_ip       Set Destination IP Address
+  source_port_from     Set Source port start value
+  source_port_to       Set Source port end value
+  dest_port_from       Set Destination port start value
+  dest_port_to         Set Destination port end value
+  packets_per_flow     Set Total Number of packets per flow
+  continuos_stream     Continuosly loop and send packets
+
+Traffic Generator# set udp source_ip 10.1.1.1
+Source IP set to: 10.1.1.1
+
+Traffic Generator# set udp destination_ip 20.1.1.1
+Destination IP set to: 10.1.1.1
+
+Traffic Generator# set udp source_port_from 5000
+Source Port FROM is set to: 5000
+
+Traffic Generator# set udp source_port_to 5100  
+Source Port TO is set to: 5100
+
+Traffic Generator# set udp packets_per_flow 100
+total_packets_per_flow is set to: 100
+
+Traffic Generator# show streams 
+STREAM PARAMETERS
+-----------------
+source ip    : 10.1.1.1
+dest ip      : 20.1.1.1
+src port from: 5000
+src port to  : 5100
+dst port from: 443
+dst port to  : 443
+stream type  : Stop Stream
+-----------------
+pkt per flow : 100
+Total Flows  : 101
+Total Packets: 10100
+-----------------
+
+Traffic Generator# traffic start 
+STREAM PARAMETERS
+-----------------
+source ip    : 10.1.1.1
+dest ip      : 20.1.1.1
+src port from: 5000
+src port to  : 5100
+dst port from: 443
+dst port to  : 443
+stream type  : Stop Stream
+-----------------
+pkt per flow : 100
+Total Flows  : 101
+Total Packets: 10100
+-----------------
+All packets successfully sent..!
+
+Traffic Generator# 
