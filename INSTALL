@@ -1,9 +1,10 @@
 first time alone:
 
-(1) go to folder src/libcli
-(1a) sudo make
-(1b) sudo make install
-(1c) sudo ldconfig
+(1) git clone https://github.com/dparrish/libcli.git
+(1a) go to the cloned folder
+(1b) sudo make
+(1c) sudo make install
+(1d) sudo ldconfig
 
 
 after first installation of libcli, follow this every time you make a change in code

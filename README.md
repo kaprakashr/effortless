@@ -1,15 +1,16 @@
 
+![Alt text](https://user-images.githubusercontent.com/16772378/45929963-60731100-bf76-11e8-8294-fc1e2229e196.png?raw=true "Title")
+
 'Effortless' Traffic Generator
 ----------------------------
-'effortless' is a plug and play(kernel based snippet) traffic generator 
+'effortless' is a plug and play routed traffic generator snippet
 which takes NOT more than 5 mins to install and send traffic.
 Easy-to-learn, Cisco style of CLI based configuration.
 All you need is a linux device in the lab to start punting ttraffic..!!
    
-Are you using Scapy?
---------------------
-Motivation behind this snippet is SCAPY's sluggish speed,
-'effortless' cisco cli style makes it easier than scapy and 100 times faster than scapy..!!!
+Are you using Scapy? (or) fighting for Ixia/spirent ports at your work? :-)
+---------------------------------------------------------------------
+'effortless' cisco styled CLI makes your life easier than scapy/ixia and 100 times faster than scapy..!!!
    
 Use Case
 --------
