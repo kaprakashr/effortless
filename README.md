@@ -15,8 +15,8 @@ Are you using Scapy?
 Use Case
 --------
   IXIA/SPIRENT/TREX takes hours to install and no FREE  
-  (1) 90% of your functional test cases are taken care 
-      (a) create your own traffic streams without spending 1-min for port dependencies
+  (1) 90% of your traffic combinations made possible
+      (a) create your own traffic streams without spending 1-min for GUI dependencies
   (2) automate the traffic generation within few minutes!
       (a) since it's a telnet cisco CLI style, your existing frameworks does not an plugins to support this
       (b) Unlike loads of API refs in IXIA/SPIRENT etc.,
