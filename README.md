@@ -14,7 +14,7 @@ Are you using Scapy?
    
 Use Case
 --------
-  IXIA/SPIRENT/TREX takes hours to install and no FREE  
+  IXIA/SPIRENT/TREX takes hours to install and NOT FREE :-)
   (1) 90% of your traffic combinations made possible
       (a) create your own traffic streams without spending 1-min for GUI dependencies
   (2) automate the traffic generation within few minutes!
