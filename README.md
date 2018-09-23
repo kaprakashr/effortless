@@ -7,8 +7,8 @@ which takes NOT more than 5 mins to install and send traffic.
 Easy-to-learn, Cisco style of CLI based configuration.
 All you need is a linux device in the lab to start punting ttraffic..!!
    
-Are you using Scapy?
---------------------
+Are you using Scapy? (or) fighting for Ixia/spirent ports at your work? :-)
+---------------------------------------------------------------------
 Motivation behind this snippet is SCAPY's sluggish speed,
 'effortless' cisco cli style makes it easier than scapy and 100 times faster than scapy..!!!
    
