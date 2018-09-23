@@ -9,8 +9,7 @@ All you need is a linux device in the lab to start punting ttraffic..!!
    
 Are you using Scapy? (or) fighting for Ixia/spirent ports at your work? :-)
 ---------------------------------------------------------------------
-Motivation behind this snippet is SCAPY's sluggish speed,
-'effortless' cisco cli style makes it easier than scapy and 100 times faster than scapy..!!!
+'effortless' cisco styled CLI makes your life easier than scapy/ixia and 100 times faster than scapy..!!!
    
 Use Case
 --------
