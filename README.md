@@ -1,6 +1,5 @@
-# effortless
 
-Effortless Traffic Generator
+'Effortless' Traffic Generator
 ----------------------------
 'effortless' is a plug and play(kernel based snippet) traffic generator 
 which takes NOT more than 5 mins to install and send traffic.
