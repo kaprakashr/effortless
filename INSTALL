@@ -1,7 +1,12 @@
+first time alone:
+
 (1) go to folder src/libcli
 (1a) sudo make
 (1b) sudo make install
 (1c) sudo ldconfig
+
+
+after first installation of libcli, follow this every time you make a change in code
 
 (2) now come back to 'src' folder
 (2a) gcc effortless.c -lcli
