@@ -1,7 +1,7 @@
 
 'Effortless' Traffic Generator
 ----------------------------
-'effortless' is a plug and play(kernel based snippet) traffic generator 
+'effortless' is a plug and play(kernel based snippet) routed traffic generator 
 which takes NOT more than 5 mins to install and send traffic.
 Easy-to-learn, Cisco style of CLI based configuration.
 All you need is a linux device in the lab to start punting ttraffic..!!
