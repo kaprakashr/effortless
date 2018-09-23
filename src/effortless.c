@@ -30,7 +30,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include "libcli.h"
-
+#include <stdbool.h>
 #include<stdio.h>
 #include<string.h>
 #include<sys/socket.h>
@@ -54,9 +54,9 @@ unsigned int regular_count = 0;
 unsigned int debug_regular = 0;
 
 char src_ip[32] = "20.1.1.1", dst_ip[32] = "10.1.1.1";
-int src_port_from=2454, src_port_to=2454, dst_port_from=443, dst_port_to =443;
+int src_port_from=24454, src_port_to=24454, dst_port_from=4443, dst_port_to =4443;
 int number_of_pkts = 0;
-uint32_t total_flow_count=0;
+uint32_t total_flow_count=0, pkt_size_udp=10;
 uint32_t total_packets=0, total_packets_per_flow=1;
 int traffic_on = 0;
 int loop_stream = 0;
@@ -68,6 +68,7 @@ int loop_stream = 0;
 // 4. add option for DNS
 // 5. add option for ICMP
 // *6. for continuos looped packets only option is to press ctrl+c, crash too
+// *7. crashing udp checksum calculation, commented for now, checksum is allowed to be set to 0 in udp
 
 /*
     96 bit (12 bytes) pseudo header needed for udp header checksum calculation
@@ -80,6 +81,52 @@ struct pseudo_header
     u_int8_t protocol;
     u_int16_t udp_length;
 };
+
+
+/*
+**************************************************************************
+Function: udp_sum_calc()
+Description: Calculate UDP checksum
+***************************************************************************
+*/
+uint16_t udp_checksum(struct udphdr *p_udp_header, size_t len, uint32_t src_addr, uint32_t dest_addr)
+{
+  const uint16_t *buf = (const uint16_t*)p_udp_header;
+  uint16_t *ip_src = (void*)&src_addr, *ip_dst = (void*)&dest_addr;
+  uint32_t sum;
+  size_t length = len;
+
+  // Calculate the sum
+  sum = 0;
+  while (len > 1)
+  {
+    sum += *buf++;
+    if (sum & 0x80000000)
+      sum = (sum & 0xFFFF) + (sum >> 16);
+    len -= 2;
+  }
+
+  if (len & 1)
+    // Add the padding if the packet lenght is odd
+    sum += *((uint8_t*)buf);
+
+  // Add the pseudo-header
+  sum += *(ip_src++);
+  sum += *ip_src;
+
+  sum += *(ip_dst++);
+  sum += *ip_dst;
+
+  sum += htons(IPPROTO_UDP);
+  sum += htons(length);
+
+  // Add the carries
+  while (sum >> 16)
+    sum = (sum & 0xFFFF) + (sum >> 16);
+
+  // Return the one's complement of sum
+  return (uint16_t)~sum;
+}
 
 /*
     Generic checksum calculation function
@@ -186,6 +233,7 @@ int cmd_show_stream(struct cli_def *cli, UNUSED(const char *command), char *argv
   cli_print(cli, "src port to  : %d", src_port_to);
   cli_print(cli, "dst port from: %d", dst_port_from);
   cli_print(cli, "dst port to  : %d", dst_port_to);
+  cli_print(cli, "packet size  : %u", pkt_size_udp);
   if (loop_stream) {
     cli_print(cli, "stream type  : Continuos Stream");
   } 
@@ -380,6 +428,25 @@ int cmd_udp_pkts(struct cli_def *cli, UNUSED(const char *command), char *argv[],
   }
   return CLI_OK;
 }
+int cmd_pkt_size(struct cli_def *cli, UNUSED(const char *command), char *argv[], int argc) {
+  char temp[100];
+  if (argv[0]) {
+    strcpy(temp, argv[0]);
+  }
+  if (argc < 1 || strcmp(temp, "?") == 0) {
+    cli_print(cli, "<udp packet size> limit:: [0-1400]");
+  }
+  if (argc > 0 && strcmp(temp, "?") != 0) {
+    if (valid_digit(temp) && atoi(temp) < 1400) {
+        pkt_size_udp = atoi(temp);
+        cli_print(cli, "udp packet size is set to: %d", pkt_size_udp);
+    }
+    else {
+        cli_print(cli, "ERROR:: Please enter a valid digit less than 1400\n");
+    }
+  }
+  return CLI_OK;
+}
 int cmd_loop_udp(struct cli_def *cli, UNUSED(const char *command), char *argv[], int argc) {
   char temp[100]="NON";
   if (argv[0]) {
@@ -408,11 +475,16 @@ int idle_timeout(struct cli_def *cli) {
   cli_print(cli, "Custom idle timeout");
   return CLI_QUIT;
 }
-int prepare_packet_udp(char src_ip[32], char dst_ip[32], int src_port, int dst_port, int s)
+int prepare_packet_udp(char src_ip[32], char dst_ip[32], int src_port, int dst_port, int s, int size)
 {
     //Datagram to represent the packet
     char datagram[4096] , source_ip[32] , *pseudogram;
     char *data;
+    char temp_data[size];
+    memset (temp_data,0,size);
+    for (int y=0; y<size; y++) {
+      temp_data[y] = 'K';
+    }
     //zero out the packet buffer
     memset (datagram, 0, 4096);
     int psize = 0;
@@ -426,8 +498,7 @@ int prepare_packet_udp(char src_ip[32], char dst_ip[32], int src_port, int dst_p
 
     //Data part
     data = datagram + sizeof(struct iphdr) + sizeof(struct udphdr);
-    strcpy(data , "KK");
-    //data = (char *)malloc(8);
+    strcpy(data , temp_data);
     uint16_t val = 65533;
     memcpy(&data[1], (char *)&val,sizeof(uint16_t));
     //data[2] = '\0';
@@ -473,7 +544,7 @@ int prepare_packet_udp(char src_ip[32], char dst_ip[32], int src_port, int dst_p
     memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
     memcpy(pseudogram + sizeof(struct pseudo_header) , udph , sizeof(struct udphdr) + strlen(data));
 
-    udph->check = csum( (unsigned short*) pseudogram , psize);
+    //udph->check = csum( (unsigned short*) pseudogram , psize);
 
     iph->saddr = inet_addr(source_ip);
     iph->daddr = inet_addr(dst_ip);
@@ -481,15 +552,14 @@ int prepare_packet_udp(char src_ip[32], char dst_ip[32], int src_port, int dst_p
 
     udph->dest = htons(dst_port);
     udph->source  = htons(src_port);
-    udph->check = csum( (unsigned short*) pseudogram , psize);
+    //udph->check = udp_checksum(udph, udph->len, iph->saddr, iph->daddr);
+    //udph->check = csum( (unsigned short*) pseudogram , psize);
 
     //frame the packet
     psize = sizeof(struct pseudo_header) + sizeof(struct udphdr) + strlen(data);
     //printf ("%d",psize);
     memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
     memcpy(pseudogram + sizeof(struct pseudo_header) , udph , sizeof(struct udphdr) + strlen(data));
-    //calc chksum
-    udph->check = csum( (unsigned short*) pseudogram , psize);
 
     if (sendto (s, datagram, iph->tot_len ,  0, (struct sockaddr *) &sin, sizeof (sin)) < 0){
         perror("sendto failed");
@@ -553,7 +623,7 @@ int cmd_traffic_start(struct cli_def *cli, UNUSED(const char *command), char *ar
     	    for (dst_prt=dst_port_from; dst_prt<=dst_port_to; dst_prt++) {
 	        temp_total = 0;
             	while (temp_total <= total_packets_per_flow) {
-          	    prepare_packet_udp(src_ip,dst_ip,src_prt,dst_prt,s);
+          	    prepare_packet_udp(src_ip,dst_ip,src_prt,dst_prt,s,pkt_size_udp);
           	    temp_total++;
             	}
        	    }
@@ -565,7 +635,7 @@ int cmd_traffic_start(struct cli_def *cli, UNUSED(const char *command), char *ar
             for (dst_prt=dst_port_from; dst_prt<=dst_port_to; dst_prt++) {
                 temp_total = 0;
                 while (temp_total <= total_packets_per_flow) {
-                    prepare_packet_udp(src_ip,dst_ip,src_prt,dst_prt,s);
+                    prepare_packet_udp(src_ip,dst_ip,src_prt,dst_prt,s,pkt_size_udp);
                     temp_total++;
                 }
             }
@@ -582,7 +652,7 @@ int main()
 {
   struct cli_command *c, *udp_stream, *set, *show, *show_stream;
   struct cli_command *udp_stream_src_ip, *udp_stream_dst_ip, *traffic, *traffic_start;
-  struct cli_command *udp_stream_src_port_from, *udp_stream_dst_port_from;
+  struct cli_command *udp_stream_src_port_from, *udp_stream_dst_port_from, *udp_pkt_size;
   struct cli_command *udp_stream_src_port_to, *udp_stream_dst_port_to, *udp_stream_pkt_per_flow, *udp_stream_loop;
   struct cli_def *cli;
   int s, x;
@@ -602,14 +672,15 @@ int main()
   traffic = cli_register_command(cli, NULL, "traffic", cmd_traffic, PRIVILEGE_PRIVILEGED, MODE_EXEC, "push traffic");
   show_stream = cli_register_command(cli, show, "streams", cmd_show_stream, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Show the current available traffic stream");
   udp_stream = cli_register_command(cli, set, "udp", cmd_udp, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Configure UDP Stream");
-  udp_stream_src_ip = cli_register_command(cli, udp_stream, "source_ip", cmd_udp_src_ip, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Source IP Address");
-  udp_stream_dst_ip = cli_register_command(cli, udp_stream, "destination_ip", cmd_udp_dst_ip, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Destination IP Address");
-  udp_stream_src_port_from = cli_register_command(cli, udp_stream, "source_port_from", cmd_udp_src_f, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Source port start value");
-  udp_stream_src_port_to = cli_register_command(cli, udp_stream, "source_port_to", cmd_udp_src_t, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Source port end value");
-  udp_stream_dst_port_from = cli_register_command(cli, udp_stream, "dest_port_from", cmd_udp_dst_f, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Destination port start value");
-  udp_stream_dst_port_to = cli_register_command(cli, udp_stream, "dest_port_to", cmd_udp_dst_t, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Destination port end value");
-  udp_stream_pkt_per_flow = cli_register_command(cli, udp_stream, "packets_per_flow", cmd_udp_pkts, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Total Number of packets per flow");
-  udp_stream_loop = cli_register_command(cli, udp_stream, "continuos_stream", cmd_loop_udp, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Continuosly loop and send packets");
+  udp_stream_src_ip = cli_register_command(cli, udp_stream, "source-ip", cmd_udp_src_ip, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Source IP Address");
+  udp_stream_dst_ip = cli_register_command(cli, udp_stream, "destination-ip", cmd_udp_dst_ip, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Destination IP Address");
+  udp_stream_src_port_from = cli_register_command(cli, udp_stream, "source-port-from", cmd_udp_src_f, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Source port start value");
+  udp_stream_src_port_to = cli_register_command(cli, udp_stream, "source-port-to", cmd_udp_src_t, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Source port end value");
+  udp_stream_dst_port_from = cli_register_command(cli, udp_stream, "dest-port-from", cmd_udp_dst_f, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Destination port start value");
+  udp_stream_dst_port_to = cli_register_command(cli, udp_stream, "dest-port-to", cmd_udp_dst_t, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Destination port end value");
+  udp_stream_pkt_per_flow = cli_register_command(cli, udp_stream, "packets-per-flow", cmd_udp_pkts, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set Total Number of packets per flow");
+  udp_stream_loop = cli_register_command(cli, udp_stream, "continuos-stream", cmd_loop_udp, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Continuosly loop and send packets");
+  udp_pkt_size = cli_register_command(cli, udp_stream, "packet-size", cmd_pkt_size, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Set udp payload size");
   traffic_start = cli_register_command(cli, traffic, "start", cmd_traffic_start, PRIVILEGE_PRIVILEGED, MODE_EXEC, "Start the traffic");
 
   cli_set_auth_callback(cli, check_auth);
